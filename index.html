@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Get Access</title>
+<style>
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    padding: 20px;
+    background: #111;
+    color: white;
+    font-family: sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.container {
+    width: 90%;
+    max-width: 650px;
+    padding: 25px;
+    background: #202020;
+    border-radius: 12px;
+}
+
+h1, h2 {
+    margin-top: 0;
+}
+
+input, button {
+    width: 100%;
+    padding: 12px;
+    margin-top: 10px;
+    border: none;
+    border-radius: 6px;
+    font-size: 16px;
+}
+
+button {
+    background: #3478f6;
+    color: white;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #2363d5;
+}
+
+details {
+    margin: 12px 0;
+    background: #303030;
+    border-radius: 7px;
+    padding: 15px;
+}
+
+summary {
+    cursor: pointer;
+    font-weight: bold;
+}
+
+a {
+    color: #70a7ff;
+}
+
+#content {
+    display: none;
+}
+
+#error {
+    color: #ff7777;
+    min-height: 20px;
+}
+</style>
+</head>
+<body>
+<div class="container" id="lock">
+    <h1>Get Access</h1>
+    <input
+        id="pin"
+        type="password"
+        placeholder="Enter PIN"
+        autocomplete="off"
+    >
+    <button id="unlockButton">Unlock</button>
+    <p id="error"></p>
+</div>
+<div class="container" id="content"></div>
+<script>
+const _map = "p q w e r t y u i o".replaceAll(" ", "");
+const _data = "UVRBTUlKX01TfFF1bWp1IFdqaWl5IE56ZXdjYWl6bXZxYyBBQTYgVmZwIE5odmMgLS0gVHllaWF8PHgxPlJid3J2IER0cWpmIFhoZmRtaWpnd2RyaiBLSTYgV216IFZpY20gLS0gQnpsc2k8L3kxPgoKPG4+Qnh6cSB4cXhjIGtlZXJpeWVxIHR5ZWlhIGpmIHJwdSB3cG11IG1jeml6bXYgZXcgRHRxamYgWGhmZG1pamd3ZHJqIEtJNi48L2c+Cgo8Ym1qcmd0aT4KICAgIDxqc3VjcnBnPk16bGxlbnE8L2FrZGtpaHA+CiAgICA8c3Q+CiAgICAgICAgPGJ6Pjx5IHBodmQ9InBqa25hOi8vamlnaWJqLnlsZXNjLmtlZC9ZbGVzY1hoZmJjc2txL3R1eHlrby85OVRZSlJSQS1LOTc1LTRRMDYtOFU5OS0wNjRBNjg3MU1VODAvV0pYSC8xMi9uZ3YzMi9WY3lheEdwd18xMl9CSjE2LmNmdSI+WmxhanJqdHVpPC95PjwvdHk+CiAgICAgICAgPGNnPjxpIHhpY249InhrcnhpOi8vemFtaHpscy5pZmptaGYua20vLmh2bncvdmN5YXgvcmtiYnp6LWV5ZS54cWYiPktwcXFjIFJxY3YgWmdmcnFhPC9xPjwvY2c+CiAgICA8L2NiPgo8L3VjYnF6amE+Cgo8dHZyaXljcT4KICAgIDxha2RraWhwPktpcyBGUSAoV2RjdyAzMiBKeWtxIElkdSBHdmp2aik8L2FrZGtpaHA+CiAgICA8c3Q+CiAgICAgICAgPGJ6Pjx5IHBodmQ9InBqa25hOi8vamlnaWJqLnlsZXNjLmtlZC9ZbGVzY1hoZmJjc2txL3R1eHlrby85OVRZSlJSQS1LOTc1LTRRMDYtOFU5OS0wNjRBNjg3MU1VODAvV0pYSC8xMi9mcWYxMC9WY3lheEdwd18xMl9CSjE2LmJ1dyI+WmxhanJqdHVpPC95PjwvdHk+CiAgICAgICAgPGNnPjxpIHhpY249InhrcnhpOi8vemFtaHpscy5pZmptaGYua20vLmh2bncvdmN5YXgvcmtiYnp6LXVxdG1hLnB6biI+Qmh6eXQgSnprbSBScG5paWo8L3k+PC90eT4KICAgIDwvbGo+CjwvbHVreXFiaj4=";
+function getKey(pin) {
+    if (!/^[0-9]+$/.test(pin)) return "";
+
+    return [...pin]
+        .map(digit => _map[Number(digit)])
+        .join("");
+}
+function decodeBase64(data) {
+    const binary = atob(data.replace(/\s/g, ""));
+    const bytes = Uint8Array.from(binary, c => c.charCodeAt(0));
+
+    return new TextDecoder().decode(bytes);
+}
+function decrypt(text, key) {
+    let result = "";
+    let keyIndex = 0;
+    for (const char of text) {
+        const code = char.charCodeAt(0);
+
+        if (/[a-z]/i.test(char)) {
+            const base = code >= 97 ? 97 : 65;
+            const shift = key.charCodeAt(keyIndex % key.length) - 97;
+
+            result += String.fromCharCode(
+                ((code - base - shift + 26) % 26) + base
+            );
+
+            keyIndex++;
+        } else {
+            result += char;
+        }
+    }
+    return result;
+}
+function unlock() {
+    const pin = document.getElementById("pin").value;
+    const key = getKey(pin);
+    const error = document.getElementById("error");
+    error.textContent = "";
+    if (!key) {
+        error.textContent = "Enter a valid numeric PIN.";
+        return;
+    }
+    try {
+        const encrypted = decodeBase64(_data);
+        const decrypted = decrypt(encrypted, key);
+        const firstSeparator = decrypted.indexOf("|");
+        const secondSeparator = decrypted.indexOf("|", firstSeparator + 1);
+        let pageTitle = "Access";
+        let pageHTML = decrypted;
+        if (firstSeparator !== -1) {
+            if (secondSeparator !== -1) {
+                pageTitle = decrypted.substring(
+                    firstSeparator + 1,
+                    secondSeparator
+                );
+                pageHTML = decrypted.substring(secondSeparator + 1);
+            } else {
+                pageTitle = decrypted.substring(firstSeparator + 1);
+                pageHTML = decrypted.substring(firstSeparator + 1);
+            }
+        }
+        document.title = pageTitle || "Access";
+        const lock = document.getElementById("lock");
+        const content = document.getElementById("content");
+
+        lock.style.display = "none";
+        content.style.display = "block";
+        content.innerHTML = pageHTML;
+		content.querySelectorAll("a").forEach(link => {
+			link.target = "_blank";
+			link.rel = "noopener noreferrer";
+		});
+
+    } catch (e) {
+        console.error(e);
+        error.textContent = e.name + ": " + e.message;
+    }
+}
+
+document.getElementById("unlockButton").addEventListener("click", unlock);
+
+document.getElementById("pin").addEventListener("keydown", e => {
+    if (e.key === "Enter") unlock();
+});
+</script>
+
+</body>
+</html>
